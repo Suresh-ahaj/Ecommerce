@@ -148,7 +148,7 @@
                                         <div class="p-3">
                                             <div class="flex items-center justify-between gap-2 mb-2">
                                                 <h3 class="text-xl font-medium dark:text-gray-400">
-                                                    {{ $product->name }}
+                                                   {{ Str::limit($product->name, 20) }}
                                                 </h3>
                                             </div>
                                             <p class="text-lg">

@@ -21,6 +21,6 @@ class CategoryController extends Controller
                     ->where('is_active', 1)
                     ->paginate(12);
 
-        return view('frontend.category_products', compact('category', 'products'));
+        return view('frontend.product.index', compact('category', 'products'));
     }
 }

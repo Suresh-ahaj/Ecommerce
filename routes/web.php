@@ -19,8 +19,6 @@ Route::get("/", [PageController::class, "index"])->name("home");
 Route::get('/categories', [CategoryController::class, 'category'])->name('category');
 Route::get('/products', [ProductController::class, 'index'])->name('products');
 Route::get('/products/{slug}', [ProductController::class, 'show'])->name('product');
-Route::get('/category/{slug}', [CategoryController::class, 'show'])
-    ->name('category.products');
 /*
 |--------------------------------------------------------------------------
 | Cart Routes (Public - Accessible to everyone)

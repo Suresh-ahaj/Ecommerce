@@ -158,7 +158,7 @@
                                                 src="{{ Storage::url($category->image) }}"
                                                 alt="{{ $category->name }}"
                                             >
-                                        @else
+                                          @else
                                             <div class="h-[2.375rem] w-[2.375rem] rounded-full bg-gray-300 flex items-center justify-center">
                                                 <span class="text-xs text-gray-600">{{ substr($category->name, 0, 2) }}</span>
                                             </div>
