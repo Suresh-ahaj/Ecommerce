@@ -17,6 +17,11 @@ class Order extends Model
         'shipping_method',
         'notes',
     ];
+      protected $casts = [
+        'total_amount' => 'decimal:2',
+        'delivered_at' => 'datetime',
+        'cancelled_at' => 'datetime',
+    ];
 
     public function user(){
         return $this->belongsTo(User::class);

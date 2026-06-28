@@ -23,6 +23,7 @@ class BrandForm
                     ->required(),
                 FileUpload::make('image')
                     ->image()
+                    ->disk('public')
                     ->directory('brands')
                     ->columnSpanFull(),
                 Toggle::make('is_active')
