@@ -26,7 +26,7 @@
                                     <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors duration-200">
                                         <td class="px-6 py-4 whitespace-nowrap">
                                             <span class="text-sm font-semibold text-gray-800 dark:text-gray-200">
-                                                #{{ $order->order_number }}
+                                                #{{ $order->id }}
                                             </span>
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap">
@@ -37,11 +37,11 @@
                                         <td class="px-6 py-4 whitespace-nowrap">
                                             @php
                                                 $statusColors = [
-                                                    'pending' => 'bg-yellow-500',
-                                                    'processing' => 'bg-blue-500',
+                                                    'new' => 'bg-blue-500',
+                                                    'processing' => 'bg-yellow-500',
                                                     'shipped' => 'bg-purple-500',
                                                     'delivered' => 'bg-green-500',
-                                                    'cancelled' => 'bg-red-500',
+                                                    'canceled' => 'bg-red-500',
                                                 ];
                                                 $statusColor = $statusColors[$order->status] ?? 'bg-gray-500';
                                             @endphp
@@ -62,12 +62,12 @@
                                             @endphp
                                             <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium text-white {{ $paymentColor }}">
                                                 <span class="w-1.5 h-1.5 rounded-full bg-white/30 mr-1.5"></span>
-                                                {{ ucfirst(str_replace('_', ' ', $order->payment_status)) }}
+                                                {{ ucfirst($order->payment_status ?? 'Pending') }}
                                             </span>
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap">
                                             <span class="text-sm font-semibold text-gray-800 dark:text-gray-200">
-                                                Rs. {{ number_format($order->total_amount, 2) }}
+                                                Rs. {{ number_format($order->grand_total ?? 0, 2) }}
                                             </span>
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-end">

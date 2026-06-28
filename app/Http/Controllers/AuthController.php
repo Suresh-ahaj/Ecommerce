@@ -42,7 +42,7 @@ class AuthController extends Controller
 
         if (Auth::attempt($credentials, $remember)) {
             $request->session()->regenerate();
-            
+
             return redirect()->route('home')
                 ->with('success', 'Welcome back, ' . Auth::user()->name . '!');
         }
@@ -175,13 +175,10 @@ class AuthController extends Controller
             ->with('success', 'You have been logged out successfully.');
     }
 
-    /**
-     * Show dashboard - only for authenticated users
-     */
-    public function dashboard()
-    {
-        return view('frontend.dashboard');
-    }
+  
+    
+
+    
 
     /**
      * Show profile - only for authenticated users
@@ -190,7 +187,7 @@ class AuthController extends Controller
     {
         // Get the authenticated user
         $user = Auth::user();
-        
+
         // Pass the user to the view
         return view('frontend.Auth.profile', compact('user'));
     }

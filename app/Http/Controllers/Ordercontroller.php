@@ -26,10 +26,11 @@ class OrderController extends Controller
      */
     public function order_details($orderId)
     {
-        $order = Order::with(['orderItems.product', 'orderItems.product.images'])
+        $order = Order::with('orderItems.product')
             ->where('user_id', Auth::id())
             ->findOrFail($orderId);
 
         return view('frontend.order.order_details', compact('order'));
     }
+    
 }

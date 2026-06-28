@@ -150,6 +150,7 @@
                                             class="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider px-3 py-2">
                                             Account Settings
                                         </p>
+                                    
 
                                         <a href="{{ route('profile') }}"
                                             class="flex items-center gap-4 p-3 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition group/item">
@@ -173,7 +174,7 @@
                                             </svg>
                                         </a>
 
-                                        <a href="{{ route('orders') }}"
+                                        <a href="{{ route('my.orders') }}"
                                             class="flex items-center gap-4 p-3 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition group/item">
                                             <div
                                                 class="w-5 h-5 rounded-lg bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 flex items-center justify-center group-hover/item:bg-green-100 dark:group-hover/item:bg-green-800/30 transition">
@@ -369,7 +370,7 @@
                     </a>
                 </li>
                 <li>
-                    <a href="{{ route('orders') }}"
+                    <a href="{{ route('my.orders') }}"
                         class="flex items-center px-3 py-2 text-gray-700 rounded-lg hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"

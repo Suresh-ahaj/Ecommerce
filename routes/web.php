@@ -39,18 +39,19 @@ Route::prefix('cart')->name('cart.')->group(function () {
 */
 Route::middleware('auth')->group(function () {
     // Checkout Routes
-    Route::prefix('checkout')->name('checkout.')->group(function () {
+       Route::prefix('checkout')->name('checkout.')->group(function () {
         Route::get('/', [CheckoutController::class, 'index'])->name('index');
+        Route::post('/process', [CheckoutController::class, 'process'])->name('process');
         Route::get('/success', [CheckoutController::class, 'success'])->name('success');
         Route::get('/cancel', [CheckoutController::class, 'cancel'])->name('cancel');
     });
 
     // Order Routes
-    Route::get('/my-orders', [OrderController::class, 'my_order'])->name('orders');
-    Route::get('/my-orders/{order}', [OrderController::class, 'order_details'])->name('order.details');
+   Route::get('/my-orders', [OrderController::class, 'my_order'])->name('my.orders');
+    Route::get('/order-details/{orderId}', [OrderController::class, 'order_details'])->name('order.details');
 
     // Dashboard
-    Route::get('/dashboard', [AuthController::class, 'dashboard'])->name('dashboard');
+
 
     // Profile Routes (using ProfileController)
     Route::get('/profile', [ProfileController::class, 'index'])->name('profile');

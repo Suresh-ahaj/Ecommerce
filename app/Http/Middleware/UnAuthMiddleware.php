@@ -15,7 +15,7 @@ class UnAuthMiddleware
     public function handle(Request $request, Closure $next): Response
     {
         if (Auth::check()) {
-            return redirect()->route('dashboard')
+            return redirect()->route('home')  // Changed from 'dashboard' to 'home'
                 ->with('info', 'You are already logged in.');
         }
 
