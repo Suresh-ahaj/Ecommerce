@@ -1,33 +1,34 @@
 <?php
 
-namespace App\Filament\Resources\Categories\Tables;
+namespace App\Filament\Resources\Carts\Tables;
 
 use Filament\Actions\BulkActionGroup;
-use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
-use Filament\Tables\Columns\IconColumn;
-use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 
-class CategoriesTable
+class CartsTable
 {
     public static function configure(Table $table): Table
     {
         return $table
             ->columns([
-                TextColumn::make('parent.name')
-                    ->label('Parent Category')
-                    ->placeholder('Main Category'),
-                TextColumn::make('name')
-                    ->searchable(),
-                TextColumn::make('slug')
-                    ->searchable(),
-                IconColumn::make('is_active')
-                    ->boolean(),
-
-                ImageColumn::make('image'),
+                TextColumn::make('user_id')
+                    ->numeric()
+                    ->sortable(),
+                TextColumn::make('product_id')
+                    ->numeric()
+                    ->sortable(),
+                TextColumn::make('quantity')
+                    ->numeric()
+                    ->sortable(),
+                TextColumn::make('unit_amount')
+                    ->numeric()
+                    ->sortable(),
+                TextColumn::make('total_amount')
+                    ->numeric()
+                    ->sortable(),
                 TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()
@@ -42,7 +43,6 @@ class CategoriesTable
             ])
             ->recordActions([
                 EditAction::make(),
-                DeleteAction::make(),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([

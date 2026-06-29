@@ -3,83 +3,98 @@
 namespace App\Http\Controllers;
 
 use App\Models\Product;
+use App\Models\Cart;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Validator;
 
 class CartController extends Controller
 {
     public function index()
-{
-    $cart = Session::get('cart', []);
+    {
+        // Get cart items from database
+        $cart_items = Cart::with('product')
+            ->where('user_id', Auth::id())
+            ->get();
 
-    $cartTotal = $this->getCartTotal();
-    $cartCount = $this->getCartCount();
+        $cartTotal = $cart_items->sum(function($item) {
+            return $item->unit_amount * $item->quantity;
+        });
 
-    $shippingAmount = 0;
-    $taxRate = 0.10;
-    $taxes = $cartTotal * $taxRate;
-    $grandTotal = $cartTotal + $taxes + $shippingAmount;
+        $cartCount = $cart_items->sum('quantity');
 
-    return view('frontend.cart.cart_page', compact(
-        'cart',
-        'cartTotal',
-        'cartCount',
-        'taxes',
-        'shippingAmount',
-        'grandTotal'
-    ));
-}
-public function clear()
-{
-    session()->forget('cart');
+        $shippingAmount = 0;
+        $taxRate = 0.10;
+        $taxes = $cartTotal * $taxRate;
+        $grandTotal = $cartTotal + $taxes + $shippingAmount;
 
-    return redirect()
-        ->route('cart.index')
-        ->with('success', 'Cart cleared successfully.');
-}
+        return view('frontend.cart.cart_page', compact(
+            'cart_items',
+            'cartTotal',
+            'cartCount',
+            'taxes',
+            'shippingAmount',
+            'grandTotal'
+        ));
+    }
 
     public function add(Request $request)
     {
+        $validator = Validator::make($request->all(), [
+            'product_id' => ['required', 'exists:products,id'],
+            'quantity' => ['required', 'integer', 'min:1'],
+        ]);
 
-        // Log for debugging
-        \Log::info('Cart add called', $request->all());
-
-        $productId = $request->input('product_id');
-        $quantity = $request->input('quantity', 1);
+        if ($validator->fails()) { 
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $validator->errors()
+            ], 422);
+        }
 
         try {
-            $product = Product::findOrFail($productId);
+            $product = Product::findOrFail($request->product_id);
 
-            // Get cart from session
-            $cart = Session::get('cart', []);
-
-            // Check if product already in cart
-            if (isset($cart[$productId])) {
-                $cart[$productId]['quantity'] += $quantity;
-            } else {
-                $cart[$productId] = [
-                    'product_id' => $product->id,
-                    'name' => $product->name,
-                    'price' => $product->price,
-                    'image' => isset($product->image[0]) ? $product->image[0] : null,
-                    'quantity' => $quantity,
-                    'total' => $product->price * $quantity
-                ];
+            // Check if product is in stock
+            if (!$product->in_stock) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Product is out of stock'
+                ], 400);
             }
 
-            // Update total
-            $cart[$productId]['total'] = $cart[$productId]['price'] * $cart[$productId]['quantity'];
+            // Check if product already in cart
+            $cartItem = Cart::where('user_id', Auth::id())
+                ->where('product_id', $request->product_id)
+                ->first();
 
-            Session::put('cart', $cart);
+            if ($cartItem) {
+                // Update existing cart item
+                $cartItem->quantity += $request->quantity;
+                $cartItem->total_amount = $cartItem->quantity * $cartItem->unit_amount;
+                $cartItem->save();
+            } else {
+                // Create new cart item
+                Cart::create([
+                    'user_id' => Auth::id(),
+                    'product_id' => $request->product_id,
+                    'quantity' => $request->quantity,
+                    'unit_amount' => $product->price,
+                    'total_amount' => $request->quantity * $product->price,
+                ]);
+            }
 
             // Calculate cart count
-            $cartCount = $this->getCartCount();
+            $cartCount = Cart::where('user_id', Auth::id())->sum('quantity');
+            $cartTotal = Cart::where('user_id', Auth::id())
+                ->sum('total_amount');
 
             return response()->json([
                 'success' => true,
                 'message' => 'Product added to cart successfully!',
                 'cart_count' => $cartCount,
-                'cart_total' => $this->getCartTotal()
+                'cart_total' => $cartTotal
             ]);
 
         } catch (\Exception $e) {
@@ -91,40 +106,84 @@ public function clear()
         }
     }
 
-    private function getCartCount()
+    public function update(Request $request)
     {
-        $cart = Session::get('cart', []);
-        $count = 0;
-        foreach ($cart as $item) {
-            $count += $item['quantity'];
+        $validator = Validator::make($request->all(), [
+            'cart_id' => ['required', 'exists:carts,id'],
+            'quantity' => ['required', 'integer', 'min:1'],
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $validator->errors()
+            ], 422);
         }
-        return $count;
+
+        try {
+            $cartItem = Cart::where('id', $request->cart_id)
+                ->where('user_id', Auth::id())
+                ->firstOrFail();
+
+            $cartItem->quantity = $request->quantity;
+            $cartItem->total_amount = $cartItem->quantity * $cartItem->unit_amount;
+            $cartItem->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Cart updated successfully'
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error updating cart'
+            ], 500);
+        }
     }
 
-    private function getCartTotal()
-    {
-        $cart = Session::get('cart', []);
-        $total = 0;
-        foreach ($cart as $item) {
-            $total += $item['total'];
-        }
-        return $total;
-    }
     public function remove(Request $request)
-{
-    $request->validate([
-        'product_id' => 'required|integer',
-    ]);
+    {
+        $validator = Validator::make($request->all(), [
+            'product_id' => ['required', 'integer'],
+        ]);
 
-    $cart = Session::get('cart', []);
+        if ($validator->fails()) {
+            return redirect()->back()
+                ->withErrors($validator)
+                ->withInput();
+        }
 
-    if (isset($cart[$request->product_id])) {
-        unset($cart[$request->product_id]);
-        Session::put('cart', $cart);
+        try {
+            Cart::where('user_id', Auth::id())
+                ->where('product_id', $request->product_id)
+                ->delete();
+
+            return redirect()
+                ->route('cart.index')
+                ->with('success', 'Product removed from cart successfully.');
+
+        } catch (\Exception $e) {
+            return redirect()
+                ->route('cart.index')
+                ->with('error', 'Error removing product from cart');
+        }
     }
 
-    return redirect()
-        ->route('cart.index')
-        ->with('success', 'Product removed from cart successfully.');
-}
+    public function clear()
+    {
+        try {
+            Cart::where('user_id', Auth::id())->delete();
+
+            return redirect()
+                ->route('cart.index')
+                ->with('success', 'Cart cleared successfully.');
+
+        } catch (\Exception $e) {
+            return redirect()
+                ->route('cart.index')
+                ->with('error', 'Error clearing cart');
+        }
+    }
 }

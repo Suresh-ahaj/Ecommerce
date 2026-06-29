@@ -2,25 +2,52 @@
     <div class="w-full max-w-[85rem] py-10 px-4 sm:px-6 lg:px-8 mx-auto">
         <section class="py-10 bg-gray-50 font-poppins dark:bg-gray-800 rounded-lg">
             <div class="px-4 py-4 mx-auto max-w-7xl lg:py-6 md:px-6">
-                <div class="flex flex-wrap  mb-24 -mx-3">
+                <div class="flex flex-wrap mb-24 -mx-3">
                     <!-- Sidebar Filters -->
                     <div class="w-full pr-2 lg:w-1/4 lg:block">
                         <form id="filterForm" action="{{ route('products') }}" method="GET">
-                            <!-- Categories Filter -->
+                            <!-- Categories Filter with Tree Structure -->
                             <div class="p-4 mb-5 bg-white border border-gray-200 dark:border-gray-900 dark:bg-gray-900">
                                 <h2 class="text-2xl font-bold dark:text-gray-400">Categories</h2>
-                                <div class="w-16 pb-2 mb-6 border-b border-rose-600 dark:border-gray-400"></div>
-                                <ul>
+                                <div class="w-16 pb-2 mb-4 border-b border-rose-600 dark:border-gray-400"></div>
+
+                                <ul class="space-y-2">
                                     @foreach ($categories as $category)
-                                        <li class="mb-4">
-                                            <label for="category_{{ $category->id }}" class="flex items-center dark:text-gray-400">
-                                                <input type="checkbox" name="categories[]"
-                                                    id="category_{{ $category->id }}" value="{{ $category->id }}"
-                                                    class="w-4 h-4 mr-2 filter-checkbox"
-                                                    @if (request()->has('categories') && in_array($category->id, request()->categories)) checked @endif>
-                                                <span class="text-lg">{{ $category->name }}</span>
-                                            </label>
-                                        </li>
+                                        @if($category->parent_id === null)
+                                            <!-- Parent Category -->
+                                            <li class="mb-2">
+                                                <label for="category_{{ $category->id }}" class="flex items-center dark:text-gray-400 font-semibold">
+                                                    <input type="checkbox" name="categories[]"
+                                                        id="category_{{ $category->id }}" value="{{ $category->id }}"
+                                                        class="w-4 h-4 mr-2 filter-checkbox rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                                        @if (request()->has('categories') && in_array($category->id, request()->categories)) checked @endif>
+                                                    <span class="text-lg">{{ $category->name }}</span>
+                                                    <span class="ml-2 text-xs text-gray-400 dark:text-gray-500">
+                                                        ({{ $category->products->count() }})
+                                                    </span>
+                                                </label>
+
+                                                <!-- Child Categories -->
+                                                @if($category->children && $category->children->count() > 0)
+                                                    <ul class="ml-6 mt-1 space-y-1 border-l-2 border-gray-200 dark:border-gray-700 pl-3">
+                                                        @foreach($category->children as $child)
+                                                            <li>
+                                                                <label for="category_{{ $child->id }}" class="flex items-center dark:text-gray-400 text-sm">
+                                                                    <input type="checkbox" name="categories[]"
+                                                                        id="category_{{ $child->id }}" value="{{ $child->id }}"
+                                                                        class="w-3.5 h-3.5 mr-2 filter-checkbox rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                                                        @if (request()->has('categories') && in_array($child->id, request()->categories)) checked @endif>
+                                                                    <span>{{ $child->name }}</span>
+                                                                    <span class="ml-2 text-xs text-gray-400 dark:text-gray-500">
+                                                                        ({{ $child->products->count() }})
+                                                                    </span>
+                                                                </label>
+                                                            </li>
+                                                        @endforeach
+                                                    </ul>
+                                                @endif
+                                            </li>
+                                        @endif
                                     @endforeach
                                 </ul>
                             </div>
@@ -34,7 +61,7 @@
                                         <li class="mb-4">
                                             <label for="brand_{{ $brand->id }}" class="flex items-center dark:text-gray-300">
                                                 <input type="checkbox" name="brands[]" id="brand_{{ $brand->id }}"
-                                                    value="{{ $brand->id }}" class="w-4 h-4 mr-2 filter-checkbox"
+                                                    value="{{ $brand->id }}" class="w-4 h-4 mr-2 filter-checkbox rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                                                     @if (request()->has('brands') && in_array($brand->id, request()->brands)) checked @endif>
                                                 <span class="text-lg dark:text-gray-400">{{ $brand->name }}</span>
                                             </label>
@@ -51,7 +78,7 @@
                                     <li class="mb-4">
                                         <label for="in_stock" class="flex items-center dark:text-gray-300">
                                             <input type="checkbox" name="in_stock" id="in_stock" value="1"
-                                                class="w-4 h-4 mr-2 filter-checkbox"
+                                                class="w-4 h-4 mr-2 filter-checkbox rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                                                 @if (request()->has('in_stock') && request()->in_stock == 1) checked @endif>
                                             <span class="text-lg dark:text-gray-400">In Stock</span>
                                         </label>
@@ -59,7 +86,7 @@
                                     <li class="mb-4">
                                         <label for="on_sale" class="flex items-center dark:text-gray-300">
                                             <input type="checkbox" name="on_sale" id="on_sale" value="1"
-                                                class="w-4 h-4 mr-2 filter-checkbox"
+                                                class="w-4 h-4 mr-2 filter-checkbox rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                                                 @if (request()->has('on_sale') && request()->on_sale == 1) checked @endif>
                                             <span class="text-lg dark:text-gray-400">On Sale</span>
                                         </label>
@@ -112,6 +139,26 @@
 
                     <!-- Products Grid -->
                     <div class="w-full px-3 lg:w-3/4">
+                        <!-- Category Path/Breadcrumb -->
+                        @if(request()->has('categories') && count(request()->categories) > 0)
+                            <div class="px-3 mb-4">
+                                <div class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                                    <span class="font-medium">Filtered by:</span>
+                                    @foreach(request()->categories as $catId)
+                                        @php
+                                            $category = \App\Models\Category::find($catId);
+                                        @endphp
+                                        @if($category)
+                                            <span class="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full text-xs">
+                                                {{ $category->name }}
+                                                <a href="#" onclick="removeCategoryFilter({{ $catId }})" class="hover:text-red-500">×</a>
+                                            </span>
+                                        @endif
+                                    @endforeach
+                                </div>
+                            </div>
+                        @endif
+
                         <div class="px-3 mb-4">
                             <div class="items-center justify-between px-3 py-2 bg-gray-100 md:flex dark:bg-gray-900">
                                 <div class="flex items-center justify-between w-full">
@@ -203,36 +250,47 @@
     @push('scripts')
     <script>
         // =============================================
+        // REMOVE CATEGORY FILTER
+        // =============================================
+        function removeCategoryFilter(categoryId) {
+            const form = document.getElementById('filterForm');
+            const checkboxes = form.querySelectorAll('input[name="categories[]"]');
+
+            checkboxes.forEach(checkbox => {
+                if (parseInt(checkbox.value) === categoryId) {
+                    checkbox.checked = false;
+                }
+            });
+
+            form.submit();
+        }
+
+        // =============================================
         // ADD TO CART FUNCTION
         // =============================================
         function addToCart(productId) {
-            // Get CSRF token
             const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
             if (!csrfToken) {
                 showToast('CSRF token not found. Please refresh the page.', 'error');
                 return;
             }
 
-            // Find the button
             const btn = document.querySelector(`[data-product-id="${productId}"]`);
             if (!btn) {
                 showToast('Button not found!', 'error');
                 return;
             }
 
-            // Show loading state
             const textSpan = btn.querySelector('.btn-text');
             const originalText = textSpan ? textSpan.textContent : 'Add to Cart';
             if (textSpan) textSpan.textContent = 'Adding...';
             btn.disabled = true;
             btn.style.opacity = '0.7';
 
-            // Prepare data
             const formData = new FormData();
             formData.append('product_id', productId);
             formData.append('quantity', 1);
 
-            // Send AJAX request
             fetch('{{ route("cart.add") }}', {
                 method: 'POST',
                 headers: {
@@ -253,12 +311,10 @@
                     showToast(data.message || 'Product added to cart!', 'success');
                     updateCartCount(data.cart_count);
 
-                    // Show success state
                     btn.style.backgroundColor = '#22c55e';
                     btn.style.color = 'white';
                     if (textSpan) textSpan.textContent = 'Added! ✓';
 
-                    // Reset button after 2 seconds
                     setTimeout(() => {
                         btn.style.backgroundColor = '';
                         btn.style.color = '';
@@ -320,13 +376,11 @@
 
             container.appendChild(toast);
 
-            // Slide in
             setTimeout(() => {
                 toast.classList.remove('translate-x-full');
                 toast.classList.add('translate-x-0');
             }, 100);
 
-            // Slide out and remove
             setTimeout(() => {
                 toast.classList.remove('translate-x-0');
                 toast.classList.add('translate-x-full');
@@ -346,7 +400,6 @@
             const maxPriceInput = document.getElementById('maxPrice');
             let timeoutId = null;
 
-            // Price range slider
             if (priceRange) {
                 priceRange.addEventListener('input', function() {
                     const value = this.value;
@@ -356,14 +409,12 @@
                 });
             }
 
-            // Checkbox filters
             document.querySelectorAll('.filter-checkbox').forEach(checkbox => {
                 checkbox.addEventListener('change', function() {
                     submitForm();
                 });
             });
 
-            // Sort filter
             const sortSelect = document.getElementById('sortSelect');
             if (sortSelect) {
                 sortSelect.addEventListener('change', function() {
@@ -371,7 +422,6 @@
                 });
             }
 
-            // Debounced form submission
             function submitForm() {
                 clearTimeout(timeoutId);
                 timeoutId = setTimeout(() => {
@@ -398,6 +448,19 @@
         .add-to-cart-btn:disabled {
             cursor: not-allowed;
             opacity: 0.6;
+        }
+        /* Category tree styles */
+        .category-tree ul {
+            border-left: 2px solid #e5e7eb;
+        }
+        .dark .category-tree ul {
+            border-left-color: #374151;
+        }
+        .category-tree .parent-label {
+            font-weight: 600;
+        }
+        .category-tree .child-label {
+            padding-left: 0.5rem;
         }
     </style>
 </x-frontend-layout>

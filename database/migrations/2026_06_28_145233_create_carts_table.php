@@ -16,8 +16,8 @@ return new class extends Migration
             $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
             $table->foreignId('product_id')->constrained('products')->cascadeOnDelete();
             $table->integer('quantity')->default(1);
-            $table->decimal('unit_amount', 10, 2)->nullable();
-            $table->decimal('total_amount', 10, 2)->nullable();
+            $table->decimal('unit_amount', 15, 2)->nullable();
+            $table->decimal('total_amount', 15, 2)->nullable();
             $table->timestamps();
 
             // Ensure a user can't have duplicate products in cart

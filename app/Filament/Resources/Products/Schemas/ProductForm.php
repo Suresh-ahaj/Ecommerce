@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Products\Schemas;
 
+use App\Models\Category;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\Select;
@@ -30,7 +31,7 @@ class ProductForm
                                 TextInput::make('name')
                                     ->required()
                                     ->maxLength(255)
-                                    ->live(onBlur:true)
+                                    ->live(onBlur: true)
                                     ->afterStateUpdated(fn(Set $set, ?string $state) => $set('slug', Str::slug($state)))
                                     ->placeholder('Enter product name'),
                                 TextInput::make('slug')
@@ -53,10 +54,7 @@ class ProductForm
                                     ->reorderable()
                                     ->required()
                                     ->image()
-                                    ->imageEditor()
-                                    ->maxSize(2048)
-                                    ->acceptedFileTypes(['image/jpeg', 'image/png', 'image/webp'])
-                                    ->helperText('Upload product images (max 2MB each)'),
+                                    ->imageEditor(),
                             ]),
                     ]),
 
@@ -79,11 +77,12 @@ class ProductForm
                             ->collapsible()
                             ->schema([
                                 Select::make('category_id')
+                                    ->label('Category')
                                     ->required()
                                     ->searchable()
                                     ->preload()
-                                    ->relationship('category', 'name')
-                                    ->placeholder('Select a category'),
+                                    ->options(fn() => static::getLeafCategories())
+                                    ->placeholder('Select Category'),
                                 Select::make('brand_id')
                                     ->required()
                                     ->searchable()
@@ -122,5 +121,12 @@ class ProductForm
                             ->columns(2),
                     ]),
             ]);
+    }
+    protected static function getLeafCategories(): array
+    {
+        return Category::doesntHave('children')
+            ->orderBy('name')
+            ->pluck('name', 'id')
+            ->toArray();
     }
 }

@@ -19,6 +19,12 @@
             </a>
         </div>
 
+        @if(session('error'))
+            <div class="mb-4 p-4 bg-red-100 dark:bg-red-900/30 border border-red-400 dark:border-red-700 text-red-700 dark:text-red-400 rounded-lg">
+                {{ session('error') }}
+            </div>
+        @endif
+
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
             <!-- Left Column - Shipping & Payment -->
             <div class="lg:col-span-8 space-y-6">
@@ -230,11 +236,22 @@
 
                 <!-- Action Buttons -->
                 <div class="flex flex-col sm:flex-row gap-4">
-                    <button type="submit" class="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold py-3.5 px-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center gap-2 text-base">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/>
-                        </svg>
-                        Place Order
+                    <button type="submit"
+                            id="place-order-btn"
+                            class="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold py-3.5 px-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center gap-2 text-base disabled:opacity-70 disabled:cursor-not-allowed">
+                        <span id="btn-text">
+                            <svg class="w-5 h-5 inline-block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/>
+                            </svg>
+                            Place Order
+                        </span>
+                        <span id="btn-loading" class="hidden">
+                            <svg class="animate-spin w-5 h-5 inline-block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            Processing...
+                        </span>
                     </button>
                     <a href="{{ route('cart.index') }}" class="flex-1 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 font-semibold py-3.5 px-6 rounded-xl transition-colors duration-200 flex items-center justify-center gap-2 text-base">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -265,8 +282,8 @@
                                 <span class="font-medium text-gray-800 dark:text-white">Rs. {{ number_format($subtotal ?? 0, 2) }}</span>
                             </div>
                             <div class="flex justify-between text-sm">
-                                <span class="text-gray-600 dark:text-gray-400">Tax (0%)</span>
-                                <span class="font-medium text-gray-800 dark:text-white">Rs. 0.00</span>
+                                <span class="text-gray-600 dark:text-gray-400">Tax (10%)</span>
+                                <span class="font-medium text-gray-800 dark:text-white">Rs. {{ number_format($taxes ?? 0, 2) }}</span>
                             </div>
                             <div class="flex justify-between text-sm border-b border-dashed border-gray-200 dark:border-gray-700 pb-3">
                                 <span class="text-gray-600 dark:text-gray-400">Shipping</span>
@@ -296,7 +313,7 @@
                         </div>
                     </div>
                     <div class="p-4 max-h-[400px] overflow-y-auto">
-                        @if(isset($cart_items) && count($cart_items) > 0)
+                        @if(isset($cart_items) && $cart_items->count() > 0)
                             <ul class="divide-y divide-gray-200 dark:divide-gray-700" role="list">
                                 @foreach($cart_items as $item)
                                 <li class="py-4 first:pt-0 last:pb-0">
@@ -305,11 +322,11 @@
                                             @if($item->product && $item->product->image)
                                                 @php
                                                     $images = is_array($item->product->image) ? $item->product->image : json_decode($item->product->image, true);
-                                                    $firstImage = is_array($images) ? (count($images) > 0 ? $images[0] : null) : null;
+                                                    $firstImage = is_array($images) && count($images) > 0 ? $images[0] : null;
                                                 @endphp
                                                 @if($firstImage)
                                                     <img src="{{ asset('storage/' . $firstImage) }}"
-                                                         alt="{{ Str::limit($item->product->name, 30) }}"
+                                                         alt="{{ Str::limit($item->product->name ?? 'Product', 30) }}"
                                                          class="w-full h-full object-cover">
                                                 @else
                                                     <div class="w-full h-full flex items-center justify-center">
@@ -361,4 +378,21 @@
             </div>
         </div>
     </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.getElementById('checkout-form');
+        const btn = document.getElementById('place-order-btn');
+        const btnText = document.getElementById('btn-text');
+        const btnLoading = document.getElementById('btn-loading');
+
+        if (form) {
+            form.addEventListener('submit', function() {
+                btn.disabled = true;
+                btnText.classList.add('hidden');
+                btnLoading.classList.remove('hidden');
+            });
+        }
+    });
+    </script>
 </x-frontend-layout>

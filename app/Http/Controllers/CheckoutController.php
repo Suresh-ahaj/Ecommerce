@@ -2,21 +2,22 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
+use App\Models\Address;
 use App\Models\Cart;
 use App\Models\Order;
 use App\Models\OrderItem;
-use App\Models\Address;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Validator;
 
 class CheckoutController extends Controller
 {
     public function index()
     {
-        // Get cart items for authenticated user
-        $cart_items = Cart::with(['product'])
+        // Get cart items from database
+        $cart_items = Cart::with('product')
             ->where('user_id', Auth::id())
             ->get();
 
@@ -27,14 +28,16 @@ class CheckoutController extends Controller
 
         // Calculate totals
         $subtotal = $cart_items->sum(function($item) {
-            return ($item->unit_amount ?? 0) * ($item->quantity ?? 1);
+            return $item->unit_amount * $item->quantity;
         });
 
-        $shipping = 0; // You can add shipping calculation logic
-        $grand_total = $subtotal + $shipping;
+        $taxRate = 0.10;
+        $taxes = $subtotal * $taxRate;
+        $shipping = 0;
+        $grand_total = $subtotal + $taxes + $shipping;
         $cart_count = $cart_items->sum('quantity');
 
-        return view('frontend.checkout.index', compact('cart_items', 'subtotal', 'shipping', 'grand_total', 'cart_count'));
+        return view('frontend.checkout.index', compact('cart_items', 'subtotal', 'shipping', 'grand_total', 'cart_count', 'taxes'));
     }
 
     public function process(Request $request)
@@ -60,7 +63,7 @@ class CheckoutController extends Controller
         try {
             DB::beginTransaction();
 
-            // Get cart items
+            // Get cart items from database
             $cart_items = Cart::with('product')
                 ->where('user_id', Auth::id())
                 ->get();
@@ -72,11 +75,13 @@ class CheckoutController extends Controller
 
             // Calculate totals
             $subtotal = $cart_items->sum(function($item) {
-                return ($item->unit_amount ?? 0) * ($item->quantity ?? 1);
+                return $item->unit_amount * $item->quantity;
             });
 
+            $taxRate = 0.10;
+            $taxes = $subtotal * $taxRate;
             $shipping = 0;
-            $grand_total = $subtotal + $shipping;
+            $grand_total = $subtotal + $taxes + $shipping;
 
             // Create order
             $order = Order::create([
@@ -91,15 +96,18 @@ class CheckoutController extends Controller
                 'notes' => $request->order_notes,
             ]);
 
-            // Create order items
+            // Create order items from cart
             foreach ($cart_items as $item) {
                 OrderItem::create([
                     'order_id' => $order->id,
                     'product_id' => $item->product_id,
                     'quantity' => $item->quantity,
                     'unit_amount' => $item->unit_amount,
-                    'total_amount' => ($item->unit_amount ?? 0) * ($item->quantity ?? 1),
+                    'total_amount' => $item->total_amount,
                 ]);
+
+                // Optional: Update product stock
+                // $item->product->decrement('stock', $item->quantity);
             }
 
             // Create address
@@ -114,10 +122,18 @@ class CheckoutController extends Controller
                 'zip_code' => $request->zip_code,
             ]);
 
-            // Clear cart
+            // Clear cart from database
             Cart::where('user_id', Auth::id())->delete();
 
             DB::commit();
+
+            // Store order details in session for success page
+            session([
+                'order_id' => $order->id,
+                'grand_total' => $grand_total,
+                'payment_method' => $request->payment_method,
+                'payment_status' => $order->payment_status,
+            ]);
 
             // Redirect based on payment method
             if ($request->payment_method == 'stripe') {
@@ -129,12 +145,19 @@ class CheckoutController extends Controller
             return redirect()->route('checkout.success')
                 ->with('success', 'Order placed successfully! Your order #' . $order->id . ' has been confirmed.');
 
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return redirect()->back()
-                ->with('error', 'Something went wrong. Please try again.')
-                ->withInput();
         }
+        // catch (\Exception $e) {
+        //     DB::rollBack();
+        //     Log::error('Checkout error: ' . $e->getMessage());
+        //     return redirect()->back()
+        //         ->with('error', 'Something went wrong. Please try again.')
+        //         ->withInput();
+        // }
+        catch (\Exception $e) {
+    DB::rollBack();
+
+    dd($e->getMessage());
+}
     }
 
     public function success()

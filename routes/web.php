@@ -10,41 +10,28 @@ use App\Http\Controllers\OrderController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
-/*
-|--------------------------------------------------------------------------
-| Public Routes (Accessible to everyone)
-|--------------------------------------------------------------------------
-*/
+
+//publicly visible
 Route::get("/", [PageController::class, "index"])->name("home");
 Route::get('/categories', [CategoryController::class, 'category'])->name('category');
 Route::get('/products', [ProductController::class, 'index'])->name('products');
 Route::get('/products/{slug}', [ProductController::class, 'show'])->name('product');
-/*
-|--------------------------------------------------------------------------
-| Cart Routes (Public - Accessible to everyone)
-|--------------------------------------------------------------------------
-*/
-Route::prefix('cart')->name('cart.')->group(function () {
+
+//require authentication
+Route::middleware('auth')->group(function () {
+    // Checkout Routes
+        Route::get('/checkout', [CheckoutController::class, 'index'])->name('checkout.index');
+    Route::post('/checkout/process', [CheckoutController::class, 'process'])->name('checkout.process');
+    Route::get('/checkout/success', [CheckoutController::class, 'success'])->name('checkout.success');
+    Route::get('/checkout/cancel', [CheckoutController::class, 'cancel'])->name('checkout.cancel');
+    //cart
+    Route::prefix('cart')->name('cart.')->group(function () {
     Route::get('/', [CartController::class, 'index'])->name('index');
     Route::post('/add', [CartController::class, 'add'])->name('add');
     Route::post('/update', [CartController::class, 'update'])->name('update');
     Route::post('/remove', [CartController::class, 'remove'])->name('remove');
     Route::post('/clear', [CartController::class, 'clear'])->name('clear');
 });
-
-/*
-|--------------------------------------------------------------------------
-| Checkout & Order Routes (Requires Authentication)
-|--------------------------------------------------------------------------
-*/
-Route::middleware('auth')->group(function () {
-    // Checkout Routes
-       Route::prefix('checkout')->name('checkout.')->group(function () {
-        Route::get('/', [CheckoutController::class, 'index'])->name('index');
-        Route::post('/process', [CheckoutController::class, 'process'])->name('process');
-        Route::get('/success', [CheckoutController::class, 'success'])->name('success');
-        Route::get('/cancel', [CheckoutController::class, 'cancel'])->name('cancel');
-    });
 
     // Order Routes
    Route::get('/my-orders', [OrderController::class, 'my_order'])->name('my.orders');
@@ -63,11 +50,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 });
 
-/*
-|--------------------------------------------------------------------------
-| Guest Routes (Only for Unauthenticated Users)
-|--------------------------------------------------------------------------
-*/
+
 Route::middleware('guest')->group(function () {
     // Login Routes
     Route::get('/login', [AuthController::class, 'login'])->name('login');
